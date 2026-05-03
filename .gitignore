@@ -74,6 +74,10 @@ yarn-error.log
 *.swo
 *~
 
+# Development tool configurations
+/.agents
+/.amp
+
 # OS generated files
 .DS_Store
 .DS_Store?

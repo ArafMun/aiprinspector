@@ -7,8 +7,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
-use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Support\Facades\Password;
 
 class ForgotPasswordController extends Controller
@@ -42,15 +40,8 @@ class ForgotPasswordController extends Controller
             return back()->with('error', 'We can\'t find a user with that email address.');
         }
 
-        // Generate a unique token
-        $token = Str::random(60);
-
-        // Store the token in password_resets table
-        \DB::table('password_resets')->insert([
-            'email' => $user->email,
-            'token' => Hash::make($token),
-            'created_at' => now(),
-        ]);
+        // Use Laravel's built-in password reset functionality
+        $status = Password::sendResetLink($request->only('email'));
 
         // Log the password reset request
         \Log::channel('audit')->info('Password reset requested', [
@@ -63,11 +54,11 @@ class ForgotPasswordController extends Controller
             'event_type' => 'security'
         ]);
 
-        // For demo purposes, we'll show the reset link in the response
-        // In production, you would send this via email
-        $resetUrl = route('password.reset', ['token' => $token, 'email' => $user->email]);
+        if ($status === Password::RESET_LINK_SENT) {
+            return back()->with('status', 'Password reset link has been sent to your email.');
+        }
 
-        return back()->with('status', "Password reset link has been generated. For demo purposes: <a href='{$resetUrl}'>{$resetUrl}</a>");
+        return back()->with('error', 'Unable to send password reset link. Please try again.');
     }
 
     /**

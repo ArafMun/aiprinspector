@@ -25,6 +25,11 @@
                         create a new account
                     </a>
                 </p>
+                <p class="mt-2 text-center text-sm text-gray-600">
+                    <a href="/" class="font-medium text-gray-600 hover:text-gray-500">
+                        ← Back to main page
+                    </a>
+                </p>
             </div>
 
             <form class="mt-8 space-y-6" action="{{ route('login') }}" method="POST">

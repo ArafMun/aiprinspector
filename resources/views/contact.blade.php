@@ -38,7 +38,7 @@
     <main class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-12">
             <h1 class="text-4xl font-bold text-gray-900 mb-4">Contact Us</h1>
-            <p class="text-xl text-gray-600">Get in touch with the AI Reviewer team</p>
+            <p class="text-xl text-gray-600">Get in touch with the AI PR Inspector team</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -252,7 +252,7 @@
                             <input type="checkbox" id="newsletter" name="newsletter" value="1"
                                    class="mt-1 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" {{ old('newsletter') ? 'checked' : '' }}>
                             <label for="newsletter" class="ml-3 text-sm text-gray-600">
-                                I'd like to receive updates about AI Reviewer features and announcements
+                                I'd like to receive updates about AI PR Inspector features and announcements
                             </label>
                         </div>
 
@@ -271,8 +271,8 @@
 
                     <div class="space-y-4">
                         <div class="border-b border-gray-200 pb-4">
-                            <h4 class="text-lg font-medium text-gray-900 mb-2">How does AI Reviewer work?</h4>
-                            <p class="text-gray-600">AI Reviewer uses advanced machine learning models to analyze your code and provide actionable feedback on quality, security, and best practices.</p>
+                            <h4 class="text-lg font-medium text-gray-900 mb-2">How does AI PR Inspector work?</h4>
+                            <p class="text-gray-600">AI PR Inspector uses advanced machine learning models to analyze your code and provide actionable feedback on quality, security, and best practices.</p>
                         </div>
 
                         <div class="border-b border-gray-200 pb-4">
@@ -319,7 +319,7 @@
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="text-sm text-gray-500">
-                    © {{ date('Y') }} AI Reviewer. All rights reserved.
+                    © {{ date('Y') }} AI PR Inspector. All rights reserved.
                 </div>
                 <div class="flex space-x-6 mt-4 md:mt-0">
                     <a href="{{ route('privacy') }}" class="text-sm text-gray-500 hover:text-gray-700">

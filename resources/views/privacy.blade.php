@@ -45,7 +45,7 @@
 
                     <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">Introduction</h2>
                     <p class="text-gray-600 mb-6">
-                        Welcome to AI Reviewer. We respect your privacy and are committed to protecting your personal data.
+                        Welcome to AI PR Inspector. We respect your privacy and are committed to protecting your personal data.
                         This privacy policy explains how we collect, use, and protect your information when you use our
                         AI-powered code review service.
                     </p>
@@ -185,7 +185,7 @@
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="text-sm text-gray-500">
-                    © {{ date('Y') }} AI Reviewer. All rights reserved.
+                    © {{ date('Y') }} AI PR Inspector. All rights reserved.
                 </div>
                 <div class="flex space-x-6 mt-4 md:mt-0">
                     <a href="{{ route('privacy') }}" class="text-sm text-gray-500 hover:text-gray-700">

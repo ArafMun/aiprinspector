@@ -45,13 +45,13 @@
 
                     <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">Agreement to Terms</h2>
                     <p class="text-gray-600 mb-6">
-                        By accessing and using AI Reviewer, you accept and agree to be bound by the terms and
+                        By accessing and using AI PR Inspector, you accept and agree to be bound by the terms and
                         provision of this agreement. If you do not agree to abide by the above, please do not use this service.
                     </p>
 
                     <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">Description of Service</h2>
                     <p class="text-gray-600 mb-6">
-                        AI Reviewer is an AI-powered code review service that analyzes source code, provides
+                        AI PR Inspector is an AI-powered code review service that analyzes source code, provides
                         recommendations, and helps developers improve code quality. The service integrates with
                         version control systems to provide automated code reviews.
                     </p>
@@ -146,13 +146,13 @@
 
                     <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">Limitation of Liability</h2>
                     <p class="text-gray-600 mb-6">
-                        To the maximum extent permitted by law, AI Reviewer shall not be liable for any indirect,
+                        To the maximum extent permitted by law, AI PR Inspector shall not be liable for any indirect,
                         incidental, special, or consequential damages resulting from your use of the service.
                     </p>
 
                     <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">Indemnification</h2>
                     <p class="text-gray-600 mb-6">
-                        You agree to indemnify and hold AI Reviewer harmless from any claims, damages, or expenses
+                        You agree to indemnify and hold AI PR Inspector harmless from any claims, damages, or expenses
                         arising from your use of the service or violation of these terms.
                     </p>
 
@@ -178,7 +178,7 @@
                     <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">Governing Law</h2>
                     <p class="text-gray-600 mb-6">
                         These terms shall be governed by and construed in accordance with the laws of the jurisdiction
-                        in which AI Reviewer operates, without regard to conflict of law provisions.
+                        in which AI PR Inspector operates, without regard to conflict of law provisions.
                     </p>
 
                     <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">Changes to Terms</h2>
@@ -214,7 +214,7 @@
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="text-sm text-gray-500">
-                    © {{ date('Y') }} AI Reviewer. All rights reserved.
+                    © {{ date('Y') }} AI PR Inspector. All rights reserved.
                 </div>
                 <div class="flex space-x-6 mt-4 md:mt-0">
                     <a href="{{ route('privacy') }}" class="text-sm text-gray-500 hover:text-gray-700">

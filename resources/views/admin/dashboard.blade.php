@@ -280,7 +280,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -337,5 +336,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-</div>
 @endsection

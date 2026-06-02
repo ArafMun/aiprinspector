@@ -2,27 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use App\Jobs\ProcessPullRequestJob;
 use App\Models\PullRequestReview;
 use App\Models\Repository;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 
 class WebhookController extends Controller
 {
-    public function handle(Request $request): \Illuminate\Http\JsonResponse
+    public function handle(Request $request): JsonResponse
     {
         try {
             // Verify webhook signature
-            if (!$this->verifyWebhookSignature($request)) {
+            if (! $this->verifyWebhookSignature($request)) {
                 Log::warning('Invalid webhook signature received', [
                     'action' => 'webhook_invalid_signature',
                     'business_context' => 'ai_code_review',
                     'ip' => $request->ip(),
                     'event' => $request->header('X-Gitea-Event'),
-                    'warning_type' => 'security'
+                    'warning_type' => 'security',
                 ]);
+
                 return response()->json(['error' => 'Invalid signature'], Response::HTTP_UNAUTHORIZED);
             }
 
@@ -32,18 +34,19 @@ class WebhookController extends Controller
             }
 
             $action = $request->input('action');
-            if (!in_array($action, ['opened', 'synchronize'])) {
+            if (! in_array($action, ['opened', 'synchronize'])) {
                 return response()->json(['ignored' => true]);
             }
 
             // Validate payload structure
             $payload = $request->all();
-            if (!$this->validatePayload($payload)) {
+            if (! $this->validatePayload($payload)) {
                 Log::error('Invalid webhook payload structure', [
                     'action' => 'webhook_invalid_payload',
                     'business_context' => 'ai_code_review',
-                    'error_type' => 'validation_error'
+                    'error_type' => 'validation_error',
                 ]);
+
                 return response()->json(['error' => 'Invalid payload'], Response::HTTP_BAD_REQUEST);
             }
 
@@ -64,6 +67,7 @@ class WebhookController extends Controller
                 'commit_sha' => $payload['head']['sha'] ?? null,
                 'action' => $payload['action'],
                 'payload' => $payload,
+                'ai_provider' => config('ai.default_provider', 'claude'),
                 'status' => PullRequestReview::STATUS_PENDING,
             ]);
 
@@ -75,7 +79,7 @@ class WebhookController extends Controller
                 'repo' => $payload['repository']['full_name'] ?? 'unknown',
                 'pr_number' => $payload['number'] ?? 'unknown',
                 'pr_action' => $action,
-                'review_id' => $review->id
+                'review_id' => $review->id,
             ]);
 
             return response()->json(['queued' => true]);
@@ -86,7 +90,7 @@ class WebhookController extends Controller
                 'business_context' => 'ai_code_review',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'error_type' => 'processing_error'
+                'error_type' => 'processing_error',
             ]);
 
             return response()->json(['error' => 'Internal server error'], Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -98,11 +102,12 @@ class WebhookController extends Controller
         $signature = $request->header('X-Gitea-Signature');
         $secret = config('services.gitea.webhook_secret');
 
-        if (!$signature || !$secret) {
+        if (! $signature || ! $secret) {
             return false;
         }
 
         $expectedSignature = hash_hmac('sha256', $request->getContent(), $secret);
+
         return hash_equals($expectedSignature, $signature);
     }
 

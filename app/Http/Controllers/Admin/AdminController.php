@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PullRequestReview;
+use App\Models\Role;
+use App\Models\User;
 use App\Services\AI\RateLimitService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
@@ -21,10 +21,10 @@ class AdminController extends Controller
             'failed_reviews' => PullRequestReview::where('status', PullRequestReview::STATUS_FAILED)->count(),
             'processing_reviews' => PullRequestReview::where('status', PullRequestReview::STATUS_PROCESSING)->count(),
             'pending_reviews' => PullRequestReview::where('status', PullRequestReview::STATUS_PENDING)->count(),
-            'total_users' => \App\Models\User::count(),
-            'admin_users' => \App\Models\User::where('is_admin', true)->count(),
-            'total_roles' => \App\Models\Role::count(),
-            'active_roles' => \App\Models\Role::where('is_active', true)->count(),
+            'total_users' => User::count(),
+            'admin_users' => User::where('is_admin', true)->count(),
+            'total_roles' => Role::count(),
+            'active_roles' => Role::where('is_active', true)->count(),
         ];
 
         // Get recent reviews
@@ -40,34 +40,47 @@ class AdminController extends Controller
         $aiStatus = [
             'claude' => [
                 'remaining_requests' => $claudeRateLimiter->getRemainingRequests(),
-                'configured' => !empty(config('services.claude.api_key')),
+                'configured' => ! empty(config('services.claude.api_key')),
             ],
             'openai' => [
                 'remaining_requests' => $openaiRateLimiter->getRemainingRequests(),
-                'configured' => !empty(config('services.openai.api_key')),
+                'configured' => ! empty(config('services.openai.api_key')),
             ],
         ];
 
         // Get daily review trends (last 7 days)
-        $dailyTrends = PullRequestReview::select(
-                \DB::raw('DATE(created_at) as date'),
-                \DB::raw('COUNT(*) as total'),
-                \DB::raw('SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed'),
-                \DB::raw('SUM(CASE WHEN status = "failed" THEN 1 ELSE 0 END) as failed')
-            )
+        $dailyTrendsData = PullRequestReview::select(
+            \DB::raw('DATE(created_at) as date'),
+            \DB::raw('COUNT(*) as total'),
+            \DB::raw('SUM(CASE WHEN status = '.PullRequestReview::STATUS_COMPLETED.' THEN 1 ELSE 0 END) as completed'),
+            \DB::raw('SUM(CASE WHEN status = '.PullRequestReview::STATUS_FAILED.' THEN 1 ELSE 0 END) as failed')
+        )
             ->where('created_at', '>=', Carbon::now()->subDays(7))
             ->groupBy('date')
             ->orderBy('date')
-            ->get();
+            ->get()
+            ->keyBy('date');
+
+        // Fill in missing days with zero values
+        $dailyTrends = collect();
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i)->format('Y-m-d');
+            $dailyTrends->push([
+                'date' => $date,
+                'total' => $dailyTrendsData->get($date)->total ?? 0,
+                'completed' => $dailyTrendsData->get($date)->completed ?? 0,
+                'failed' => $dailyTrendsData->get($date)->failed ?? 0,
+            ]);
+        }
 
         // Get recent users
-        $recentUsers = \App\Models\User::with('roles')
+        $recentUsers = User::with('roles')
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
 
         // Get role distribution
-        $roleDistribution = \App\Models\Role::withCount('users')
+        $roleDistribution = Role::withCount('users')
             ->orderBy('users_count', 'desc')
             ->get();
 
@@ -121,7 +134,7 @@ class AdminController extends Controller
         // Get repository statistics
         $repoStats = PullRequestReview::select('repo_name')
             ->selectRaw('COUNT(*) as total_reviews')
-            ->selectRaw('SUM(CASE WHEN status = ' . PullRequestReview::STATUS_COMPLETED . ' THEN 1 ELSE 0 END) as completed_reviews')
+            ->selectRaw('SUM(CASE WHEN status = '.PullRequestReview::STATUS_COMPLETED.' THEN 1 ELSE 0 END) as completed_reviews')
             ->selectRaw('AVG(CASE WHEN started_at IS NOT NULL AND completed_at IS NOT NULL
                 THEN TIMESTAMPDIFF(SECOND, started_at, completed_at) END) as avg_processing_time')
             ->groupBy('repo_name')
@@ -145,7 +158,7 @@ class AdminController extends Controller
     public function statisticsApi(Request $request)
     {
         $range = $request->get('range', 'week');
-        $date = match($range) {
+        $date = match ($range) {
             'today' => Carbon::today(),
             'week' => Carbon::now()->subWeek(),
             'month' => Carbon::now()->subMonth(),
@@ -155,27 +168,43 @@ class AdminController extends Controller
 
         // Get hourly data for charts
         $hourlyData = PullRequestReview::select(
-                \DB::raw('HOUR(created_at) as hour'),
-                \DB::raw('COUNT(*) as total'),
-                \DB::raw('SUM(CASE WHEN status = "2" THEN 1 ELSE 0 END) as completed'),
-                \DB::raw('SUM(CASE WHEN status = "4" THEN 1 ELSE 0 END) as failed')
-            )
+            \DB::raw('HOUR(created_at) as hour'),
+            \DB::raw('COUNT(*) as total'),
+            \DB::raw('SUM(CASE WHEN status = "2" THEN 1 ELSE 0 END) as completed'),
+            \DB::raw('SUM(CASE WHEN status = "4" THEN 1 ELSE 0 END) as failed')
+        )
             ->where('created_at', '>=', $date)
             ->groupBy('hour')
             ->orderBy('hour')
             ->get();
 
-        // Get provider usage
+        // Get provider usage from database
         $providerUsage = [
             'claude' => [
-                'requests' => Cache::get('ai_requests_claude', 0),
-                'success_rate' => Cache::get('ai_success_claude', 0),
+                'requests' => PullRequestReview::where('ai_provider', 'claude')
+                    ->where('created_at', '>=', $date)
+                    ->count(),
+                'success_rate' => 0,
             ],
             'openai' => [
-                'requests' => Cache::get('ai_requests_openai', 0),
-                'success_rate' => Cache::get('ai_success_openai', 0),
+                'requests' => PullRequestReview::where('ai_provider', 'openai')
+                    ->where('created_at', '>=', $date)
+                    ->count(),
+                'success_rate' => 0,
             ],
         ];
+
+        // Calculate success rates
+        foreach ($providerUsage as $provider => $data) {
+            $totalRequests = $data['requests'];
+            if ($totalRequests > 0) {
+                $completedRequests = PullRequestReview::where('ai_provider', $provider)
+                    ->where('created_at', '>=', $date)
+                    ->where('status', PullRequestReview::STATUS_COMPLETED)
+                    ->count();
+                $providerUsage[$provider]['success_rate'] = round(($completedRequests / $totalRequests) * 100, 1);
+            }
+        }
 
         return response()->json([
             'hourly_data' => $hourlyData,

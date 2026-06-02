@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Log;
 
@@ -17,6 +17,7 @@ class PullRequestReview extends Model
         'commit_sha',
         'action',
         'payload',
+        'ai_provider',
         'status',
         'files_count',
         'chunks_count',
@@ -34,9 +35,13 @@ class PullRequestReview extends Model
     ];
 
     public const STATUS_PENDING = 0;
+
     public const STATUS_PROCESSING = 1;
+
     public const STATUS_COMPLETED = 2;
+
     public const STATUS_PARTIAL = 3;
+
     public const STATUS_FAILED = 4;
 
     public static function getStatusLabels(): array
@@ -63,7 +68,7 @@ class PullRequestReview extends Model
             'review_id' => $this->id,
             'repo_name' => $this->repo_name,
             'pr_number' => $this->pr_number,
-            'current_status' => $this->status
+            'current_status' => $this->status,
         ]);
 
         $this->update([
@@ -75,7 +80,7 @@ class PullRequestReview extends Model
             'action' => 'review_processing_confirmed',
             'business_context' => 'ai_code_review',
             'review_id' => $this->id,
-            'new_status' => $this->fresh()->status
+            'new_status' => $this->fresh()->status,
         ]);
     }
 
@@ -88,7 +93,7 @@ class PullRequestReview extends Model
             'repo_name' => $this->repo_name,
             'pr_number' => $this->pr_number,
             'current_status' => $this->status,
-            'processed_chunks' => $processedChunks
+            'processed_chunks' => $processedChunks,
         ]);
 
         $this->update([
@@ -102,11 +107,11 @@ class PullRequestReview extends Model
             'business_context' => 'ai_code_review',
             'review_id' => $this->id,
             'new_status' => $this->fresh()->status,
-            'processed_chunks' => $processedChunks
+            'processed_chunks' => $processedChunks,
         ]);
     }
 
-    public function markAsPartial(int $processedChunks, string $errorMessage = null): void
+    public function markAsPartial(int $processedChunks, ?string $errorMessage = null): void
     {
         $this->update([
             'status' => self::STATUS_PARTIAL,

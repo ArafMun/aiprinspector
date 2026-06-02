@@ -122,7 +122,13 @@
                                                 <div class="text-sm text-gray-900">{{ $user->email }}</div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="text-sm text-gray-500">{{ $user->pivot->created_at->diffForHumans() }}</div>
+                                                <div class="text-sm text-gray-500">
+                                                    @if($user->pivot && $user->pivot->created_at)
+                                                        {{ $user->pivot->created_at->diffForHumans() }}
+                                                    @else
+                                                        N/A
+                                                    @endif
+                                                </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <a href="{{ route('admin.users.show', $user) }}" class="text-indigo-600 hover:text-indigo-900">

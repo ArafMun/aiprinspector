@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'AI Reviewer Admin') - Admin Panel</title>
+    <title>@yield('title', 'AI PR Inspector Admin') - Admin Panel</title>
     <script src="{{ asset('js/chart.js') }}"></script>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <script src="{{ asset('js/app.js') }}" defer></script>
@@ -27,11 +27,11 @@
                     <a href="/" class="text-lg font-bold text-gray-900 hover:text-gray-700">AI PR Inspector</a>
                 </div>
                 <!-- Mobile close button -->
-                <button id="close-sidebar" class="lg:hidden text-gray-500 hover:text-gray-700">
+                {{--<button id="close-sidebar" class="lg:hidden text-gray-500 hover:text-gray-700">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
-                </button>
+                </button>--}}
             </div>
 
             <!-- Sidebar Navigation -->
@@ -102,7 +102,7 @@
         </aside>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="flex-1 flex flex-col overflow-hidden w-full lg:ml-0">
             <!-- Top Bar -->
             <header class="bg-white shadow-sm border-b border-gray-200">
                 <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
@@ -116,32 +116,90 @@
                         <h1 class="text-lg font-semibold text-gray-900">@yield('title', 'Dashboard')</h1>
                     </div>
 
-                    <!-- User Profile Section -->
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                                    <span class="text-sm font-medium text-indigo-600">{{ substr(Auth::user()->name, 0, 1) }}</span>
+                    <!-- User Profile Dropdown -->
+                    <div class="relative">
+                        <button id="user-menu-button" class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 lg:hover:bg-gray-50 p-1 lg:p-0">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                                        <span class="text-sm font-medium text-indigo-600">{{ substr(Auth::user()->name, 0, 1) }}</span>
+                                    </div>
+                                </div>
+                                <div class="ml-3 text-left hidden lg:block">
+                                    <p class="text-sm font-medium text-gray-900">{{ Auth::user()->name }}</p>
+                                    @php
+                                        $userRoles = Auth::user()->roles->pluck('name')->toArray();
+                                    @endphp
+                                    @if(count($userRoles) > 0)
+                                        <p class="text-xs text-gray-500">{{ implode(', ', array_slice($userRoles, 0, 2)) }}</p>
+                                    @else
+                                        <p class="text-xs text-gray-500">User</p>
+                                    @endif
+                                </div>
+                                <svg class="ml-2 h-4 w-4 text-gray-400 hidden lg:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </button>
+
+                        <!-- Dropdown menu -->
+                        <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 sm:w-56 lg:w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 max-h-96 overflow-y-auto">
+                            <div class="py-1">
+                                <!-- User Profile Header -->
+                                <div class="px-4 py-3 border-b border-gray-100">
+                                    <p class="text-sm font-medium text-gray-900 truncate">{{ Auth::user()->name }}</p>
+                                    <p class="text-xs text-gray-500 truncate">{{ Auth::user()->email }}</p>
+                                </div>
+
+                                <!-- Menu Items -->
+                                <div class="py-1">
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            <svg class="mr-3 h-4 w-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                            </svg>
+                                            <span class="truncate">Profile</span>
+                                        </div>
+                                    </a>
+
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            <svg class="mr-3 h-4 w-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            </svg>
+                                            <span class="truncate">Settings</span>
+                                        </div>
+                                    </a>
+
+                                    @if(Auth::user()->hasPermission('admin.settings'))
+                                    <a href="{{ route('admin.statistics') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            <svg class="mr-3 h-4 w-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                            </svg>
+                                            <span class="truncate">Statistics</span>
+                                        </div>
+                                    </a>
+                                    @endif
+                                </div>
+
+                                <!-- Logout -->
+                                <div class="border-t border-gray-100 py-1">
+                                    <form action="{{ route('logout') }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <div class="flex items-center">
+                                                <svg class="mr-3 h-4 w-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                                </svg>
+                                                <span class="truncate">Logout</span>
+                                            </div>
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
-                            <div class="ml-3">
-                                <p class="text-sm font-medium text-gray-900">{{ Auth::user()->name }}</p>
-                                @php
-                                    $userRoles = Auth::user()->roles->pluck('name')->toArray();
-                                @endphp
-                                @if(count($userRoles) > 0)
-                                    <p class="text-xs text-gray-500">{{ implode(', ', array_slice($userRoles, 0, 2)) }}</p>
-                                @else
-                                    <p class="text-xs text-gray-500">User</p>
-                                @endif
-                            </div>
                         </div>
-                        <form action="{{ route('logout') }}" method="POST" class="inline">
-                            @csrf
-                            <button type="submit" class="text-sm text-gray-500 hover:text-gray-700">
-                                Logout
-                            </button>
-                        </form>
                     </div>
                 </div>
             </header>
@@ -197,65 +255,119 @@
             </main>
 
             <!-- Footer -->
-            <footer class="bg-white border-t border-gray-200">
-                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                    <div class="flex flex-col md:flex-row justify-between items-center">
-                        <div class="text-sm text-gray-500">
-                            © {{ date('Y') }} AI Reviewer. All rights reserved.
-                        </div>
-                        <div class="flex space-x-6 mt-4 md:mt-0">
-                            <a href="{{ route('privacy') }}" class="text-sm text-gray-500 hover:text-gray-700">
-                                Privacy Policy
-                            </a>
-                            <a href="{{ route('terms') }}" class="text-sm text-gray-500 hover:text-gray-700">
-                                Terms of Service
-                            </a>
-                            <a href="{{ route('contact') }}" class="text-sm text-gray-500 hover:text-gray-700">
-                                Contact
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </footer>
+            @include('components.footer')
         </div>
     </div>
 
     <!-- Sidebar JavaScript -->
     <script>
-        // Sidebar toggle functionality
-        const sidebar = document.getElementById('sidebar');
-        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
-        const openSidebarBtn = document.getElementById('open-sidebar');
-        const closeSidebarBtn = document.getElementById('close-sidebar');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sidebar toggle functionality
+            const mobileSidebar = document.getElementById('mobile-sidebar');
+            const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+            const openSidebarBtn = document.getElementById('open-sidebar');
+            const closeSidebarBtn = document.getElementById('close-mobile-sidebar');
 
-        function openSidebar() {
-            sidebar.classList.remove('-translate-x-full');
-            sidebarBackdrop.classList.remove('hidden');
-        }
+            // User menu dropdown functionality
+            const userMenuButton = document.getElementById('user-menu-button');
+            const userMenu = document.getElementById('user-menu');
 
-        function closeSidebar() {
-            sidebar.classList.add('-translate-x-full');
-            sidebarBackdrop.classList.add('hidden');
-        }
-
-        // Event listeners
-        if (openSidebarBtn) {
-            openSidebarBtn.addEventListener('click', openSidebar);
-        }
-
-        if (closeSidebarBtn) {
-            closeSidebarBtn.addEventListener('click', closeSidebar);
-        }
-
-        if (sidebarBackdrop) {
-            sidebarBackdrop.addEventListener('click', closeSidebar);
-        }
-
-        // Close sidebar on escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !sidebar.classList.contains('-translate-x-full')) {
-                closeSidebar();
+            function openMobileSidebar() {
+                console.log('Opening mobile sidebar'); // Debug log
+                console.log('Elements:', mobileSidebar, sidebarBackdrop);
+                if (mobileSidebar && sidebarBackdrop) {
+                    mobileSidebar.classList.remove('hidden');
+                    mobileSidebar.classList.remove('-translate-x-full');
+                    sidebarBackdrop.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                    console.log('Sidebar opened successfully');
+                } else {
+                    console.error('Mobile sidebar or backdrop not found');
+                }
             }
+
+            function closeMobileSidebar() {
+                console.log('Closing mobile sidebar'); // Debug log
+                if (mobileSidebar && sidebarBackdrop) {
+                    mobileSidebar.classList.add('-translate-x-full');
+                    setTimeout(() => {
+                        mobileSidebar.classList.add('hidden');
+                    }, 300);
+                    sidebarBackdrop.classList.add('hidden');
+                    document.body.style.overflow = '';
+                    console.log('Sidebar closed successfully');
+                } else {
+                    console.error('Mobile sidebar or backdrop not found');
+                }
+            }
+
+            function toggleUserMenu() {
+                userMenu.classList.toggle('hidden');
+            }
+
+            function closeUserMenu() {
+                userMenu.classList.add('hidden');
+            }
+
+            // Sidebar event listeners
+            console.log('Checking elements:', {
+                mobileSidebar: !!mobileSidebar,
+                sidebarBackdrop: !!sidebarBackdrop,
+                openSidebarBtn: !!openSidebarBtn,
+                closeSidebarBtn: !!closeSidebarBtn
+            });
+
+            if (openSidebarBtn) {
+                console.log('Open sidebar button found'); // Debug log
+                openSidebarBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Open sidebar clicked!');
+                    openMobileSidebar();
+                });
+            } else {
+                console.log('Open sidebar button NOT found'); // Debug log
+            }
+
+            if (closeSidebarBtn) {
+                console.log('Close sidebar button found'); // Debug log
+                closeSidebarBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Close sidebar clicked!');
+                    closeMobileSidebar();
+                });
+            } else {
+                console.log('Close sidebar button NOT found'); // Debug log
+            }
+
+            if (sidebarBackdrop) {
+                sidebarBackdrop.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Backdrop clicked!');
+                    closeMobileSidebar();
+                });
+            }
+
+            // User menu event listeners
+            if (userMenuButton) {
+                userMenuButton.addEventListener('click', toggleUserMenu);
+            }
+
+            // Close user menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!userMenuButton.contains(e.target) && !userMenu.contains(e.target)) {
+                    closeUserMenu();
+                }
+            });
+
+            // Close sidebar on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !mobileSidebar.classList.contains('hidden')) {
+                    closeMobileSidebar();
+                }
+                if (e.key === 'Escape' && !userMenu.classList.contains('hidden')) {
+                    closeUserMenu();
+                }
+            });
         });
 
         // Auto-refresh functionality for logs

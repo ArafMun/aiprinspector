@@ -54,7 +54,7 @@
                             <dt class="text-sm font-medium text-gray-500">Email Verified</dt>
                             <dd class="mt-1">
                                 @if($user->email_verified_at)
-                                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">{{ $user->email_verified_at->format('M d, Y') }}</span>
+                                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">{{ $user?->email_verified_at?->format('M d, Y') }}</span>
                                 @else
                                     <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">Not Verified</span>
                                 @endif

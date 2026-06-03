@@ -3,25 +3,22 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class RegisterController extends Controller
 {
-    /**
-     * Show the registration form.
-     */
+    public function __construct(
+        private AuthService $authService
+    ) {}
+
     public function showRegistrationForm()
     {
         return view('auth.register');
     }
 
-    /**
-     * Handle a registration request.
-     */
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -36,11 +33,10 @@ class RegisterController extends Controller
                 ->withInput();
         }
 
-        $user = User::create([
+        $user = $this->authService->registerUser([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'is_admin' => false, // Regular users are not admins by default
+            'password' => $request->password,
         ]);
 
         Auth::login($user);

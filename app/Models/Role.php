@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Collection;
 
 class Role extends Model
 {
@@ -60,5 +62,59 @@ class Role extends Model
             'webhook.process' => 'Process Webhooks',
             'ai.configure' => 'Configure AI Services',
         ];
+    }
+
+    public static function getFilteredWithUserCount(array $filters): LengthAwarePaginator
+    {
+        $query = self::withCount('users');
+
+        if (! empty($filters['status'])) {
+            $query->where('is_active', $filters['status'] === 'active');
+        }
+
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->paginate(25)->withQueryString();
+    }
+
+    public static function getTotalCount(): int
+    {
+        try {
+            return self::count();
+        } catch (\Exception $e) {
+            return 0;
+        }
+    }
+
+    public static function getActiveCount(): int
+    {
+        try {
+            return self::where('is_active', true)->count();
+        } catch (\Exception $e) {
+            return 0;
+        }
+    }
+
+    public static function getRoleDistribution(): Collection
+    {
+        return self::withCount('users')
+            ->orderBy('users_count', 'desc')
+            ->get();
+    }
+
+    public function hasUsers(): bool
+    {
+        return $this->users()->count() > 0;
+    }
+
+    public function getUsersWithRoles(int $perPage = 25): LengthAwarePaginator
+    {
+        return $this->users()->with('roles')->paginate($perPage);
     }
 }

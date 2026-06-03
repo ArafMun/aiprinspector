@@ -54,6 +54,21 @@
     <!-- Filters -->
     <div class="bg-white p-4 rounded-lg shadow mb-6">
         <form method="GET" action="{{ route('admin.logs.index') }}" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                    <input type="date" name="date_from"
+                           value="{{ $filters['date_from'] ?? '' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+                    <input type="date" name="date_to"
+                           value="{{ $filters['date_to'] ?? '' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Log Level</label>
@@ -128,7 +143,7 @@
                                         <span>{{ $log['timestamp'] }}</span>
                                     @endif
                                     @if(!empty($log['context']))
-                                        <button onclick="toggleContext({{ loop.index }})" class="text-indigo-600 hover:text-indigo-900">
+                                        <button onclick="toggleContext({{ $loop->index }})" class="text-indigo-600 hover:text-indigo-900">
                                             Context
                                         </button>
                                     @endif
@@ -137,7 +152,7 @@
                                     <pre class="whitespace-pre-wrap font-mono">{{ $log['message'] }}</pre>
                                 </div>
                                 @if(!empty($log['context']))
-                                    <div id="context-{{ loop.index }}" class="hidden mt-2">
+                                    <div id="context-{{ $loop->index }}" class="hidden mt-2">
                                         <details class="text-xs">
                                             <summary class="cursor-pointer text-gray-600 hover:text-gray-900">View Context</summary>
                                             <pre class="mt-2 p-2 bg-gray-50 rounded text-gray-700 overflow-x-auto">{{ json_encode($log['context'], JSON_PRETTY_PRINT) }}</pre>

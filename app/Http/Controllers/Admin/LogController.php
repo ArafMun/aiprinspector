@@ -18,6 +18,8 @@ class LogController extends Controller
             'level' => $request->get('level', 'all'),
             'search' => $request->get('search', ''),
             'lines' => $request->get('lines', 100),
+            'date_from' => $request->get('date_from'),
+            'date_to' => $request->get('date_to'),
         ];
 
         $logs = $this->logService->getFilteredLogs($filters);

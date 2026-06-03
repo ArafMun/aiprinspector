@@ -68,16 +68,21 @@ class ReviewService
     private function getReviewLogs(PullRequestReview $review): array
     {
         $logs = [];
-        $logFile = storage_path('logs/laravel.log');
+        $reviewDate = $review->created_at->format('Y-m-d');
+        $logFile = storage_path('logs/laravel-'.$reviewDate.'.log');
+
+        if (! file_exists($logFile)) {
+            $logFile = storage_path('logs/laravel.log');
+        }
 
         if (file_exists($logFile)) {
             $content = file_get_contents($logFile);
             $lines = explode("\n", $content);
 
             foreach ($lines as $line) {
-                if (str_contains($line, "review_id\":{$review->id}") ||
-                    str_contains($line, "pr_number\":{$review->pr_number}") ||
-                    str_contains($line, "repo\":\"{$review->repo_name}\"")) {
+                if (str_contains($line, '"review_id":'.$review->id) ||
+                    str_contains($line, '"pr_number":'.$review->pr_number) ||
+                    str_contains($line, '"repo":"'.$review->repo_name.'"')) {
                     $logs[] = $line;
                 }
             }

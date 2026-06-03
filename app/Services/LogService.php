@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -9,10 +10,14 @@ class LogService
 {
     public function getFilteredLogs(array $filters): array
     {
-        $logFile = storage_path('logs/laravel.log');
+        $logFiles = $this->getLogFilesForDateRange($filters['date_from'], $filters['date_to']);
         $logs = [];
 
-        if (file_exists($logFile)) {
+        foreach ($logFiles as $logFile) {
+            if (! file_exists($logFile)) {
+                continue;
+            }
+
             $content = File::get($logFile);
             $lines = array_reverse(explode("\n", $content));
 
@@ -32,12 +37,43 @@ class LogService
                 $logs[] = $this->parseLogLine($line);
 
                 if (count($logs) >= $filters['lines']) {
-                    break;
+                    break 2;
                 }
             }
         }
 
         return $logs;
+    }
+
+    private function getLogFilesForDateRange(?string $dateFrom, ?string $dateTo): array
+    {
+        $logFiles = [];
+        $logDirectory = storage_path('logs');
+
+        if (! $dateFrom && ! $dateTo) {
+            $logFiles[] = storage_path('logs/laravel.log');
+
+            return $logFiles;
+        }
+
+        $startDate = $dateFrom ? Carbon::parse($dateFrom) : Carbon::now()->subDays(7);
+        $endDate = $dateTo ? Carbon::parse($dateTo) : Carbon::now();
+
+        $currentDate = $startDate->copy();
+        while ($currentDate->lte($endDate)) {
+            $dateStr = $currentDate->format('Y-m-d');
+            $logFile = $logDirectory.'/laravel-'.$dateStr.'.log';
+            if (file_exists($logFile)) {
+                $logFiles[] = $logFile;
+            }
+            $currentDate->addDay();
+        }
+
+        if (empty($logFiles)) {
+            $logFiles[] = storage_path('logs/laravel.log');
+        }
+
+        return array_reverse($logFiles);
     }
 
     public function getLogFileInfo(): array
@@ -126,11 +162,20 @@ class LogService
             $parsed['level'] = strtoupper($matches[3]);
             $parsed['message'] = $matches[4];
 
-            if (preg_match('/\{.*\}$/', $parsed['message'], $jsonMatch)) {
+            // Try to extract JSON from the end of the message
+            // Handle multi-line JSON by finding the last complete JSON object
+            $jsonStart = strrpos($parsed['message'], '{');
+            if ($jsonStart !== false) {
+                $jsonString = substr($parsed['message'], $jsonStart);
+                // Try to decode the JSON
                 try {
-                    $parsed['context'] = json_decode($jsonMatch[0], true) ?: [];
-                    $parsed['message'] = str_replace($jsonMatch[0], '', $parsed['message']);
+                    $decoded = json_decode($jsonString, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $parsed['context'] = $decoded;
+                        // Keep the full message intact, don't remove JSON
+                    }
                 } catch (\Exception $e) {
+                    // JSON parsing failed, keep the message as is
                 }
             }
         }

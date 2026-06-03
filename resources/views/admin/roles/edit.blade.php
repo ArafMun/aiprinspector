@@ -3,7 +3,7 @@
 @section('title', 'Edit Role')
 
 @section('content')
-<div class="px-4 sm:px-6 lg:px-8">
+<div class="px-4 py-6 sm:px-0">
     <div class="mb-6">
         <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">Edit Role: {{ ucfirst($role->name) }}</h1>
@@ -18,8 +18,8 @@
         </div>
     </div>
 
-    <div class="bg-white shadow rounded-lg">
-        <form action="{{ route('admin.roles.update', $role) }}" method="POST" class="px-6 py-4 space-y-6">
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <form action="{{ route('admin.roles.update', $role) }}" method="POST" class="p-6 space-y-6">
             @csrf
             @method('PUT')
 

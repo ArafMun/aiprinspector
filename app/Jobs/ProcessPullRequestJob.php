@@ -7,8 +7,8 @@ use App\Services\AIService;
 use App\Services\ChunkService;
 use App\Services\CommentService;
 use App\Services\GiteaService;
-use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +19,9 @@ class ProcessPullRequestJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue;
 
     public int $tries = 3;
+
     public int $timeout = 300;
+
     public string $queue = 'ai-review';
 
     public function __construct(public array $payload, private ?PullRequestReview $review = null)
@@ -49,7 +51,7 @@ class ProcessPullRequestJob implements ShouldQueue
                 'pr_number' => $prNumber,
                 'pr_action' => $action,
                 'review_id' => $this->review->id,
-                'commit_sha' => $commitSha
+                'commit_sha' => $commitSha,
             ]);
 
             // Get pull request files
@@ -62,9 +64,10 @@ class ProcessPullRequestJob implements ShouldQueue
                     'repo' => $repo,
                     'pr_number' => $prNumber,
                     'review_id' => $this->review->id,
-                    'processed_chunks' => 0
+                    'processed_chunks' => 0,
                 ]);
                 $this->review->markAsCompleted(0);
+
                 return;
             }
 
@@ -74,7 +77,7 @@ class ProcessPullRequestJob implements ShouldQueue
                 'repo' => $repo,
                 'pr_number' => $prNumber,
                 'file_count' => count($diffs),
-                'review_id' => $this->review->id
+                'review_id' => $this->review->id,
             ]);
 
             // Chunk the diffs for processing
@@ -93,7 +96,7 @@ class ProcessPullRequestJob implements ShouldQueue
                 'pr_number' => $prNumber,
                 'chunk_count' => count($chunks),
                 'review_id' => $this->review->id,
-                'files_count' => count($diffs)
+                'files_count' => count($diffs),
             ]);
 
             // Process each chunk
@@ -105,7 +108,7 @@ class ProcessPullRequestJob implements ShouldQueue
                 try {
                     $review = app(AIService::class)->review($chunk);
 
-                    if (!empty($review)) {
+                    if (! empty($review)) {
                         app(CommentService::class)->post($repo, $prNumber, $review);
                         $processedCount++;
 
@@ -117,7 +120,7 @@ class ProcessPullRequestJob implements ShouldQueue
                             'chunk_index' => $index,
                             'file' => $chunk['file'] ?? 'unknown',
                             'review_id' => $this->review->id,
-                            'processed_chunks_count' => $processedCount
+                            'processed_chunks_count' => $processedCount,
                         ]);
                     } else {
                         Log::warning('Empty review generated', [
@@ -128,7 +131,7 @@ class ProcessPullRequestJob implements ShouldQueue
                             'chunk_index' => $index,
                             'file' => $chunk['file'] ?? 'unknown',
                             'review_id' => $this->review->id,
-                            'warning_type' => 'empty_ai_response'
+                            'warning_type' => 'empty_ai_response',
                         ]);
                     }
 
@@ -153,8 +156,9 @@ class ProcessPullRequestJob implements ShouldQueue
                         'error' => $chunkError->getMessage(),
                         'review_id' => $this->review->id,
                         'failed_chunks_count' => $failedCount,
-                        'error_type' => 'chunk_processing_error'
+                        'error_type' => 'chunk_processing_error',
                     ]);
+
                     // Continue processing other chunks
                     continue;
                 }
@@ -169,7 +173,7 @@ class ProcessPullRequestJob implements ShouldQueue
                 'failed_chunks' => $failedCount,
                 'total_chunks' => count($chunks),
                 'review_id' => $this->review->id,
-                'success_rate' => $processedCount / count($chunks)
+                'success_rate' => $processedCount / count($chunks),
             ]);
 
             // Determine final status based on processing results
@@ -183,7 +187,7 @@ class ProcessPullRequestJob implements ShouldQueue
                 'total_chunks' => count($chunks),
                 'review_id' => $this->review->id,
                 'current_status' => $this->review->status,
-                'success_rate' => $processedCount / count($chunks)
+                'success_rate' => $processedCount / count($chunks),
             ]);
 
             if ($failedCount === 0) {
@@ -196,7 +200,7 @@ class ProcessPullRequestJob implements ShouldQueue
                     'processed_chunks' => $processedCount,
                     'review_id' => $this->review->id,
                     'total_chunks' => count($chunks),
-                    'success_rate' => '100%'
+                    'success_rate' => '100%',
                 ]);
                 $this->review->markAsCompleted($processedCount);
 
@@ -208,11 +212,11 @@ class ProcessPullRequestJob implements ShouldQueue
                     'review_id' => $this->review->id,
                     'status' => $this->review->status,
                     'status_label' => $this->review->getStatusLabel(),
-                    'processed_chunks' => $processedCount
+                    'processed_chunks' => $processedCount,
                 ]);
             } elseif ($processedCount === 0) {
                 // All chunks failed
-                $errorMessage = "All chunks failed to process. Errors: " . implode('; ', array_slice($chunkErrors, 0, 3));
+                $errorMessage = 'All chunks failed to process. Errors: '.implode('; ', array_slice($chunkErrors, 0, 3));
                 Log::warning('Marking review as failed', [
                     'action' => 'pr_review_marked_failed',
                     'business_context' => 'ai_code_review',
@@ -222,12 +226,12 @@ class ProcessPullRequestJob implements ShouldQueue
                     'review_id' => $this->review->id,
                     'failed_chunks' => $failedCount,
                     'total_chunks' => count($chunks),
-                    'success_rate' => '0%'
+                    'success_rate' => '0%',
                 ]);
                 $this->review->markAsFailed($errorMessage);
             } else {
                 // Partial success - mark as partial with error details
-                $errorMessage = "Partial completion: {$processedCount}/" . count($chunks) . " chunks processed. Failed chunks: " . implode('; ', array_slice($chunkErrors, 0, 3));
+                $errorMessage = "Partial completion: {$processedCount}/".count($chunks).' chunks processed. Failed chunks: '.implode('; ', array_slice($chunkErrors, 0, 3));
                 Log::warning('Marking review as partial', [
                     'action' => 'pr_review_marked_partial',
                     'business_context' => 'ai_code_review',
@@ -237,7 +241,7 @@ class ProcessPullRequestJob implements ShouldQueue
                     'total_chunks' => count($chunks),
                     'error' => $errorMessage,
                     'review_id' => $this->review->id,
-                    'success_rate' => round(($processedCount / count($chunks)) * 100, 2) . '%'
+                    'success_rate' => round(($processedCount / count($chunks)) * 100, 2).'%',
                 ]);
                 $this->review->markAsPartial($processedCount, $errorMessage);
             }
@@ -254,7 +258,7 @@ class ProcessPullRequestJob implements ShouldQueue
                 'final_status_label' => $this->review->getStatusLabel(),
                 'processed_chunks' => $this->review->processed_chunks,
                 'total_chunks' => $this->review->chunks_count,
-                'job_success' => $this->review->status === 'completed'
+                'job_success' => $this->review->status === 'completed',
             ]);
 
         } catch (ConnectionException $e) {
@@ -267,12 +271,11 @@ class ProcessPullRequestJob implements ShouldQueue
                 'review_id' => $this->review->id,
                 'current_status' => $this->review->status,
                 'error_type' => 'connection_error',
-                'retry_delay' => 60
+                'retry_delay' => 60,
             ]);
-            $this->review->markAsFailed('Connection error: ' . $e->getMessage());
+            $this->review->markAsFailed('Connection error: '.$e->getMessage());
             $this->release(60); // Retry after 60 seconds
             throw $e;
-
         } catch (Throwable $e) {
             Log::error('Failed to process pull request', [
                 'action' => 'pr_processing_failed',
@@ -283,9 +286,9 @@ class ProcessPullRequestJob implements ShouldQueue
                 'trace' => $e->getTraceAsString(),
                 'review_id' => $this->review->id,
                 'current_status' => $this->review->status,
-                'error_type' => 'processing_error'
+                'error_type' => 'processing_error',
             ]);
-            $this->review->markAsFailed('Processing error: ' . $e->getMessage());
+            $this->review->markAsFailed('Processing error: '.$e->getMessage());
             throw $e;
         }
     }
@@ -298,6 +301,7 @@ class ProcessPullRequestJob implements ShouldQueue
             'commit_sha' => $this->payload['head']['sha'] ?? null,
             'action' => $this->payload['action'],
             'payload' => $this->payload,
+            'ai_provider' => config('ai.default_provider', 'claude'),
             'status' => PullRequestReview::STATUS_PENDING,
         ]);
     }
@@ -312,7 +316,7 @@ class ProcessPullRequestJob implements ShouldQueue
             'error' => $exception->getMessage(),
             'attempts' => $this->attempts(),
             'max_attempts' => $this->tries,
-            'error_type' => 'job_failure'
+            'error_type' => 'job_failure',
         ]);
     }
 }

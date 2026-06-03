@@ -77,4 +77,13 @@ class AuditLog extends Model
     {
         return $query->whereBetween('created_at', [$startDate, $endDate]);
     }
+
+    public static function getCountByDate(string $date): int
+    {
+        try {
+            return self::whereDate('created_at', $date)->count();
+        } catch (\Exception $e) {
+            return 0;
+        }
+    }
 }

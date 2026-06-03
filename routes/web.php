@@ -1,16 +1,17 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AdminController;
-use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\LogController;
-use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Auth\ForgotPasswordController;
-use App\Http\Controllers\HealthController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\HealthController;
+use Illuminate\Support\Facades\Route;
 
 // Authentication routes
 Route::middleware('guest')->group(function () {
@@ -90,4 +91,11 @@ Route::middleware(['auth', 'admin.auth'])->prefix('admin')->name('admin.')->grou
     // Statistics
     Route::get('/stats', [AdminController::class, 'statistics'])->name('statistics');
     Route::get('/stats/api', [AdminController::class, 'statisticsApi'])->name('statistics.api');
+
+    // Profile
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/settings', [ProfileController::class, 'settings'])->name('settings');
+    Route::post('/settings/password', [ProfileController::class, 'updatePassword'])->name('settings.password');
 });

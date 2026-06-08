@@ -100,6 +100,8 @@ class ReviewService
                 return 'claude';
             } elseif (str_contains($log, 'OpenAI API')) {
                 return 'openai';
+            } elseif (str_contains($log, 'Gemini API')) {
+                return 'gemini';
             }
         }
 

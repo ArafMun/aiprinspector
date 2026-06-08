@@ -109,7 +109,13 @@ class ProcessPullRequestJob implements ShouldQueue
                     $review = app(AIService::class)->review($chunk);
 
                     if (! empty($review)) {
-                        app(CommentService::class)->post($repo, $prNumber, $review);
+                        app(CommentService::class)->post(
+                            $repo,
+                            $prNumber,
+                            $review,
+                            $chunk['file'] ?? null,
+                            $commitSha
+                        );
                         $processedCount++;
 
                         Log::info('Posted review comment', [

@@ -20,15 +20,16 @@ class ClaudeProvider implements AIProviderInterface
     public function review(array $chunk): string
     {
         // Check rate limit before making API call
-        if (!$this->rateLimiter->checkRateLimit()) {
+        if (! $this->rateLimiter->checkRateLimit()) {
             Log::warning('Claude API rate limited', [
                 'action' => 'claude_rate_limited',
                 'business_context' => 'ai_code_review',
                 'file' => $chunk['file'] ?? 'unknown',
                 'retry_after' => $this->rateLimiter->getRetryAfterSeconds(),
                 'remaining' => $this->rateLimiter->getRemainingRequests(),
-                'warning_type' => 'rate_limit'
+                'warning_type' => 'rate_limit',
             ]);
+
             return 'Rate limit exceeded. Please try again later.';
         }
 
@@ -44,8 +45,8 @@ class ClaudeProvider implements AIProviderInterface
                 'file' => $chunk['file'] ?? 'unknown',
                 'model' => config('services.claude.model', 'claude-3-5-sonnet-20241022'),
                 'prompt_length' => strlen($prompt),
-                'api_key_set' => !empty(config('services.claude.api_key')),
-                'remaining_requests' => $this->rateLimiter->getRemainingRequests()
+                'api_key_set' => ! empty(config('services.claude.api_key')),
+                'remaining_requests' => $this->rateLimiter->getRemainingRequests(),
             ]);
 
             $response = Http::withHeaders([
@@ -58,8 +59,8 @@ class ClaudeProvider implements AIProviderInterface
                 'messages' => [
                     [
                         'role' => 'user',
-                        'content' => $prompt
-                    ]
+                        'content' => $prompt,
+                    ],
                 ],
             ]);
 
@@ -69,18 +70,19 @@ class ClaudeProvider implements AIProviderInterface
                 'file' => $chunk['file'] ?? 'unknown',
                 'status' => $response->status(),
                 'successful' => $response->successful(),
-                'response_body' => $response->body()
+                'response_body' => $response->body(),
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Claude API error response', [
                     'action' => 'claude_api_error',
                     'business_context' => 'ai_code_review',
                     'file' => $chunk['file'] ?? 'unknown',
                     'status' => $response->status(),
                     'body' => $response->body(),
-                    'error_type' => 'api_error'
+                    'error_type' => 'api_error',
                 ]);
+
                 return ''; // Return empty string on API errors
             }
 
@@ -93,7 +95,7 @@ class ClaudeProvider implements AIProviderInterface
                 'file' => $chunk['file'] ?? 'unknown',
                 'review_length' => strlen($review),
                 'review_empty' => empty($review),
-                'has_content' => isset($responseData['content']) && !empty($responseData['content'])
+                'has_content' => isset($responseData['content']) && ! empty($responseData['content']),
             ]);
 
             return $review;
@@ -103,7 +105,7 @@ class ClaudeProvider implements AIProviderInterface
                 'business_context' => 'ai_code_review',
                 'error' => $e->getMessage(),
                 'file' => $chunk['file'] ?? 'unknown',
-                'error_type' => 'connection_error'
+                'error_type' => 'connection_error',
             ]);
             throw $e;
         } catch (\Exception $e) {
@@ -112,8 +114,9 @@ class ClaudeProvider implements AIProviderInterface
                 'business_context' => 'ai_code_review',
                 'error' => $e->getMessage(),
                 'file' => $chunk['file'] ?? 'unknown',
-                'error_type' => 'general_error'
+                'error_type' => 'general_error',
             ]);
+
             return ''; // Return empty string on general errors
         }
     }
@@ -125,7 +128,7 @@ class ClaudeProvider implements AIProviderInterface
 
     public function isConfigured(): bool
     {
-        return !empty(config('services.claude.api_key'));
+        return ! empty(config('services.claude.api_key'));
     }
 
     private function buildPrompt(array $chunk): string
@@ -134,43 +137,36 @@ class ClaudeProvider implements AIProviderInterface
         $patch = $chunk['patch'] ?? '';
 
         return <<<PROMPT
-You are a senior code reviewer conducting a thorough pull request review.
+You are a code reviewer focusing on basic code quality checks.
 
 File: {$fileContext}
 
-Analyze the following code diff and provide constructive feedback:
+Review ONLY the new changes in this diff:
 
 {$patch}
 
-Focus on:
-- Code quality and best practices
-- Security vulnerabilities
-- Performance issues
-- Bug potential
-- Code maintainability and readability
-- Adherence to coding standards
-- Logic errors and edge cases
+Focus on basic level checks:
+- Type errors and type mismatches
+- Naming conventions (variables, functions, classes)
+- Code style and formatting consistency
+- Basic best practices for the language
+- Simple syntax errors
+- Missing imports or dependencies
+- Obvious logic errors
+
+IMPORTANT: For each issue found, you MUST specify the exact line number from the diff.
 
 Format your response as follows:
 
-## 🔍 Review Summary
-[Brief summary of changes]
+## Issues Found
 
-## 🚨 Issues Found
-### Severity: (critical/high/medium/low)
-**Issue:** [Clear description]
-**Why it matters:** [Explanation of impact]
-**Suggested fix:** [Specific recommendation]
+Line [LINE_NUMBER]: [ISSUE_TYPE]
+- **Problem:** [Clear description of the issue]
+- **Suggestion:** [Specific fix]
 
-## 💡 Suggestions
-### Severity: (medium/low)
-**Suggestion:** [Improvement recommendation]
-**Why it helps:** [Benefit explanation]
+Repeat for each issue found. Only report actual issues found in the new changes.
 
-## ✅ Positive Notes
-[Mention good practices or well-written code]
-
-Be specific, constructive, and provide actionable feedback.
+If no issues are found, respond with: "No issues found in this change."
 PROMPT;
     }
 }

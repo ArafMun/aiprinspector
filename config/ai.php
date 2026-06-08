@@ -44,6 +44,16 @@ return [
                 'retry_after_seconds' => env('OPENAI_RETRY_AFTER', 60),
             ],
         ],
+        'gemini' => [
+            'enabled' => env('GEMINI_ENABLED', true),
+            'max_tokens' => 4000,
+            'timeout' => 30,
+            'rate_limit' => [
+                'requests_per_minute' => env('GEMINI_RATE_LIMIT_RPM', 15),
+                'requests_per_hour' => env('GEMINI_RATE_LIMIT_RPH', 1000),
+                'retry_after_seconds' => env('GEMINI_RETRY_AFTER', 60),
+            ],
+        ],
     ],
 
     /*

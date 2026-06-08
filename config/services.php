@@ -45,6 +45,11 @@ return [
         'model' => env('OPENAI_MODEL', 'gpt-3.5-turbo'),
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-1.5-pro'),
+    ],
+
     'gitea' => [
         'base' => env('GITEA_BASE_URL'),
         'token' => env('GITEA_TOKEN'),

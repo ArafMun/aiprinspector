@@ -17,7 +17,7 @@ class GiteaService
             $baseUrl = config('services.gitea.base');
             $token = config('services.gitea.token');
 
-            if (!$baseUrl || !$token) {
+            if (! $baseUrl || ! $token) {
                 throw new \InvalidArgumentException('Gitea base URL or token not configured');
             }
 
@@ -25,7 +25,7 @@ class GiteaService
                 ->timeout(30)
                 ->get("$baseUrl/repos/$repo/pulls/$index/files");
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Failed to fetch PR files from Gitea', [
                     'action' => 'gitea_api_error',
                     'business_context' => 'ai_code_review',
@@ -33,7 +33,7 @@ class GiteaService
                     'pr_number' => $index,
                     'status' => $response->status(),
                     'response' => $response->body(),
-                    'error_type' => 'api_error'
+                    'error_type' => 'api_error',
                 ]);
                 throw new \RuntimeException("Gitea API error: {$response->status()}");
             }
@@ -45,7 +45,7 @@ class GiteaService
                 'business_context' => 'ai_code_review',
                 'repo' => $repo,
                 'pr_number' => $index,
-                'file_count' => count($files)
+                'file_count' => count($files),
             ]);
 
             return $files;
@@ -57,7 +57,7 @@ class GiteaService
                 'repo' => $repo,
                 'pr_number' => $index,
                 'error' => $e->getMessage(),
-                'error_type' => 'connection_error'
+                'error_type' => 'connection_error',
             ]);
             throw $e;
         } catch (\Exception $e) {
@@ -67,7 +67,7 @@ class GiteaService
                 'repo' => $repo,
                 'pr_number' => $index,
                 'error' => $e->getMessage(),
-                'error_type' => 'general_error'
+                'error_type' => 'general_error',
             ]);
             throw $e;
         }
@@ -82,7 +82,7 @@ class GiteaService
             $baseUrl = config('services.gitea.base');
             $token = config('services.gitea.token');
 
-            if (!$baseUrl || !$token) {
+            if (! $baseUrl || ! $token) {
                 throw new \InvalidArgumentException('Gitea base URL or token not configured');
             }
 
@@ -92,18 +92,19 @@ class GiteaService
                     'business_context' => 'ai_code_review',
                     'repo' => $repo,
                     'pr_number' => $index,
-                    'warning_type' => 'empty_content'
+                    'warning_type' => 'empty_content',
                 ]);
+
                 return false;
             }
 
             $response = Http::withToken($token)
                 ->timeout(30)
                 ->post("$baseUrl/repos/$repo/issues/$index/comments", [
-                    'body' => $body
+                    'body' => $body,
                 ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Failed to post comment to Gitea', [
                     'action' => 'gitea_comment_post_error',
                     'business_context' => 'ai_code_review',
@@ -111,8 +112,9 @@ class GiteaService
                     'pr_number' => $index,
                     'status' => $response->status(),
                     'response' => $response->body(),
-                    'error_type' => 'api_error'
+                    'error_type' => 'api_error',
                 ]);
+
                 return false;
             }
 
@@ -121,7 +123,7 @@ class GiteaService
                 'business_context' => 'ai_code_review',
                 'repo' => $repo,
                 'pr_number' => $index,
-                'comment_length' => strlen($body)
+                'comment_length' => strlen($body),
             ]);
 
             return true;
@@ -133,7 +135,7 @@ class GiteaService
                 'repo' => $repo,
                 'pr_number' => $index,
                 'error' => $e->getMessage(),
-                'error_type' => 'connection_error'
+                'error_type' => 'connection_error',
             ]);
             throw $e;
         } catch (\Exception $e) {
@@ -143,8 +145,9 @@ class GiteaService
                 'repo' => $repo,
                 'pr_number' => $index,
                 'error' => $e->getMessage(),
-                'error_type' => 'general_error'
+                'error_type' => 'general_error',
             ]);
+
             return false;
         }
     }
@@ -159,14 +162,14 @@ class GiteaService
                 ->timeout(30)
                 ->get("$baseUrl/repos/$repo/pulls/$index");
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Failed to fetch PR info from Gitea', [
                     'action' => 'gitea_pr_info_error',
                     'business_context' => 'ai_code_review',
                     'repo' => $repo,
                     'pr_number' => $index,
                     'status' => $response->status(),
-                    'error_type' => 'api_error'
+                    'error_type' => 'api_error',
                 ]);
                 throw new \RuntimeException("Gitea API error: {$response->status()}");
             }
@@ -180,9 +183,106 @@ class GiteaService
                 'repo' => $repo,
                 'pr_number' => $index,
                 'error' => $e->getMessage(),
-                'error_type' => 'connection_error'
+                'error_type' => 'connection_error',
             ]);
             throw $e;
+        }
+    }
+
+    /**
+     * @throws ConnectionException
+     */
+    public function postDiffComment(string $repo, int $index, string $body, string $path, int $line, ?string $commitSha = null): bool
+    {
+        try {
+            $baseUrl = config('services.gitea.base');
+            $token = config('services.gitea.token');
+
+            if (! $baseUrl || ! $token) {
+                throw new \InvalidArgumentException('Gitea base URL or token not configured');
+            }
+
+            if (empty($body)) {
+                Log::warning('Attempted to post empty diff comment', [
+                    'action' => 'gitea_empty_diff_comment_attempt',
+                    'business_context' => 'ai_code_review',
+                    'repo' => $repo,
+                    'pr_number' => $index,
+                    'path' => $path,
+                    'line' => $line,
+                    'warning_type' => 'empty_content',
+                ]);
+
+                return false;
+            }
+
+            $payload = [
+                'body' => $body,
+                'path' => $path,
+                'line' => $line,
+            ];
+
+            if ($commitSha) {
+                $payload['commit_id'] = $commitSha;
+            }
+
+            $response = Http::withToken($token)
+                ->timeout(30)
+                ->post("$baseUrl/repos/$repo/pulls/$index/comments", $payload);
+
+            if (! $response->successful()) {
+                Log::error('Failed to post diff comment to Gitea', [
+                    'action' => 'gitea_diff_comment_post_error',
+                    'business_context' => 'ai_code_review',
+                    'repo' => $repo,
+                    'pr_number' => $index,
+                    'path' => $path,
+                    'line' => $line,
+                    'status' => $response->status(),
+                    'response' => $response->body(),
+                    'error_type' => 'api_error',
+                ]);
+
+                return false;
+            }
+
+            Log::info('Successfully posted diff comment', [
+                'action' => 'gitea_diff_comment_posted',
+                'business_context' => 'ai_code_review',
+                'repo' => $repo,
+                'pr_number' => $index,
+                'path' => $path,
+                'line' => $line,
+                'comment_length' => strlen($body),
+            ]);
+
+            return true;
+
+        } catch (ConnectionException $e) {
+            Log::error('Connection error posting diff comment', [
+                'action' => 'gitea_diff_comment_connection_error',
+                'business_context' => 'ai_code_review',
+                'repo' => $repo,
+                'pr_number' => $index,
+                'path' => $path,
+                'line' => $line,
+                'error' => $e->getMessage(),
+                'error_type' => 'connection_error',
+            ]);
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Error posting diff comment', [
+                'action' => 'gitea_diff_comment_post_general_error',
+                'business_context' => 'ai_code_review',
+                'repo' => $repo,
+                'pr_number' => $index,
+                'path' => $path,
+                'line' => $line,
+                'error' => $e->getMessage(),
+                'error_type' => 'general_error',
+            ]);
+
+            return false;
         }
     }
 }

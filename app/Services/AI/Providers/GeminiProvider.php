@@ -8,21 +8,21 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class OpenAIProvider implements AIProviderInterface
+class GeminiProvider implements AIProviderInterface
 {
     private RateLimitService $rateLimiter;
 
     public function __construct()
     {
-        $this->rateLimiter = new RateLimitService('openai');
+        $this->rateLimiter = new RateLimitService('gemini');
     }
 
     public function review(array $chunk): string
     {
         // Check rate limit before making API call
         if (! $this->rateLimiter->checkRateLimit()) {
-            Log::warning('OpenAI API rate limited', [
-                'action' => 'openai_rate_limited',
+            Log::warning('Gemini API rate limited', [
+                'action' => 'gemini_rate_limited',
                 'business_context' => 'ai_code_review',
                 'file' => $chunk['file'] ?? 'unknown',
                 'retry_after' => $this->rateLimiter->getRetryAfterSeconds(),
@@ -39,36 +39,40 @@ class OpenAIProvider implements AIProviderInterface
         try {
             $prompt = $this->buildPrompt($chunk);
 
-            Log::info('OpenAI API request', [
-                'action' => 'openai_api_request',
+            Log::info('Gemini API request', [
+                'action' => 'gemini_api_request',
                 'business_context' => 'ai_code_review',
                 'file' => $chunk['file'] ?? 'unknown',
-                'model' => config('services.openai.model', 'gpt-4'),
+                'model' => config('services.gemini.model', 'gemini-1.5-pro'),
                 'prompt_length' => strlen($prompt),
-                'api_key_set' => ! empty(config('services.openai.api_key')),
+                'api_key_set' => ! empty(config('services.gemini.api_key')),
                 'remaining_requests' => $this->rateLimiter->getRemainingRequests(),
             ]);
 
+            $apiKey = config('services.gemini.api_key');
+            $model = config('services.gemini.model', 'gemini-1.5-pro');
+            $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer '.config('services.openai.api_key'),
                 'Content-Type' => 'application/json',
-            ])->post('https://api.openai.com/v1/chat/completions', [
-                'model' => config('services.openai.model', 'gpt-4'),
-                'max_tokens' => 4000,
-                'messages' => [
+            ])->post($endpoint, [
+                'contents' => [
                     [
-                        'role' => 'system',
-                        'content' => 'You are a senior code reviewer conducting a thorough pull request review. Provide constructive, actionable feedback.',
+                        'parts' => [
+                            [
+                                'text' => $prompt,
+                            ],
+                        ],
                     ],
-                    [
-                        'role' => 'user',
-                        'content' => $prompt,
-                    ],
+                ],
+                'generationConfig' => [
+                    'maxOutputTokens' => 4000,
+                    'temperature' => 0.7,
                 ],
             ]);
 
-            Log::info('OpenAI API response', [
-                'action' => 'openai_api_response',
+            Log::info('Gemini API response', [
+                'action' => 'gemini_api_response',
                 'business_context' => 'ai_code_review',
                 'file' => $chunk['file'] ?? 'unknown',
                 'status' => $response->status(),
@@ -77,8 +81,8 @@ class OpenAIProvider implements AIProviderInterface
             ]);
 
             if (! $response->successful()) {
-                Log::error('OpenAI API error response', [
-                    'action' => 'openai_api_error',
+                Log::error('Gemini API error response', [
+                    'action' => 'gemini_api_error',
                     'business_context' => 'ai_code_review',
                     'file' => $chunk['file'] ?? 'unknown',
                     'status' => $response->status(),
@@ -90,21 +94,21 @@ class OpenAIProvider implements AIProviderInterface
             }
 
             $responseData = $response->json();
-            $review = $responseData['choices'][0]['message']['content'] ?? '';
+            $review = $responseData['candidates'][0]['content']['parts'][0]['text'] ?? '';
 
-            Log::info('OpenAI review generated', [
-                'action' => 'openai_review_generated',
+            Log::info('Gemini review generated', [
+                'action' => 'gemini_review_generated',
                 'business_context' => 'ai_code_review',
                 'file' => $chunk['file'] ?? 'unknown',
                 'review_length' => strlen($review),
                 'review_empty' => empty($review),
-                'has_choices' => isset($responseData['choices']) && ! empty($responseData['choices']),
+                'has_candidates' => isset($responseData['candidates']) && ! empty($responseData['candidates']),
             ]);
 
             return $review;
         } catch (ConnectionException $e) {
-            Log::error('OpenAI API connection failed', [
-                'action' => 'openai_connection_error',
+            Log::error('Gemini API connection failed', [
+                'action' => 'gemini_connection_error',
                 'business_context' => 'ai_code_review',
                 'error' => $e->getMessage(),
                 'file' => $chunk['file'] ?? 'unknown',
@@ -112,8 +116,8 @@ class OpenAIProvider implements AIProviderInterface
             ]);
             throw $e;
         } catch (\Exception $e) {
-            Log::error('OpenAI API error', [
-                'action' => 'openai_general_error',
+            Log::error('Gemini API error', [
+                'action' => 'gemini_general_error',
                 'business_context' => 'ai_code_review',
                 'error' => $e->getMessage(),
                 'file' => $chunk['file'] ?? 'unknown',
@@ -126,12 +130,12 @@ class OpenAIProvider implements AIProviderInterface
 
     public function getName(): string
     {
-        return 'openai';
+        return 'gemini';
     }
 
     public function isConfigured(): bool
     {
-        return ! empty(config('services.openai.api_key'));
+        return ! empty(config('services.gemini.api_key'));
     }
 
     private function buildPrompt(array $chunk): string
